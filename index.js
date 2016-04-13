@@ -1,80 +1,75 @@
-var acorn = require('acorn')
-var walk = require('acorn/dist/walk')
-var escodegen = require('escodegen')
-var defined = require('defined')
+var acorn = require('babylon');
+var traverse = require('babel-traverse').default;
 
-var regexRequire = /\brequire\b/
-var regexImport = /\bimport\b/
-var regexBoth = /\b(import|require)\b/
+var regexBoth = /\b(import|require)\b/;
 
-module.exports = detectImportRequire
-function detectImportRequire (src, opts) {
-  return findImportRequire(src, opts).strings
+module.exports = detectImportRequire;
+function detectImportRequire(src, opts) {
+	return findImportRequire(src, opts).strings;
 }
 
-module.exports.find = findImportRequire
-function findImportRequire (src, opts) {
-  opts = opts || {}
-  src = (src || '').toString()
+function findImportRequire(src, opts) {
+	opts = opts || {};
+	src = (src || '').toString();
 
-  var imports = defined(opts.imports, true)
-  var requires = defined(opts.requires, true)
+	var results = {
+		strings: [],
+		nodes: []
+	};
 
-  var results = {
-    strings: [],
-    expressions: [],
-    nodes: []
-  }
+	// quick regex test before we parse entire AST
+	var regex = regexBoth;
+	if (!regex.test(src)) {
+		return results;
+	}
 
-  // quick regex test before we parse entire AST
-  var regex = regexBoth
-  if (imports && !requires) regex = regexImport
-  else if (requires && !imports) regex = regexRequire
-  if (!regex.test(src)) {
-    return results
-  }
+	var ast = acorn.parse(src, {
+		ecmaVersion: 6,
+		sourceType: 'module',
+		allowReserved: true,
+		allowReturnOutsideFunction: true,
+		allowHashBang: true,
+		plugins: opts.plugins || []
+	});
 
-  var ast = acorn.parse(src, {
-    ecmaVersion: 6,
-    sourceType: 'module',
-    allowReserved: true,
-    allowReturnOutsideFunction: true,
-    allowHashBang: true
-  })
+	function importDeclaration(node) {
+		if (node.source.type === 'StringLiteral') {
+			results.strings.push(node.source.value);
+		}
+		results.nodes.push(node);
+	}
 
-  var importDeclaration, callExpression
-  if (imports) {
-    importDeclaration = function (node) {
-      if (node.source.type === 'Literal') {
-        results.strings.push(node.source.value)
-      }
-      results.nodes.push(node)
-    }
-  }
+	function callExpression(node) {
+		if (!isRequire(node)) {
+			return;
+		}
+		if (node.arguments.length) {
+			if (node.arguments[0].type === 'StringLiteral') {
+				results.strings.push(node.arguments[0].value);
+			}
+		}
+		results.nodes.push(node);
+	}
 
-  if (requires) {
-    callExpression = function (node) {
-      if (!isRequire(node)) return
-      if (node.arguments.length) {
-        if (node.arguments[0].type === 'Literal') {
-          results.strings.push(node.arguments[0].value)
-        } else {
-          results.expressions.push(escodegen.generate(node.arguments[0]))
-        }
-      }
-      results.nodes.push(node)
-    }
-  }
+	walk(ast, {
+		ImportDeclaration: importDeclaration,
+		CallExpression: callExpression
+	});
 
-  walk.simple(ast, {
-    ImportDeclaration: importDeclaration,
-    CallExpression: callExpression
-  })
-
-  return results
+	return results;
 }
 
-function isRequire (node) {
-  return node.callee.type === 'Identifier' &&
-    node.callee.name === 'require'
+function walk(ast, visitors) {
+	traverse(ast, {
+		enter(path) {
+			if (visitors[path.node.type]) {
+				visitors[path.node.type](path.node);
+			}
+		}
+	});
+}
+
+function isRequire(node) {
+	return node.callee.type === 'Identifier' &&
+		node.callee.name === 'require';
 }

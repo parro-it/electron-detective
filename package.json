@@ -1,31 +1,20 @@
 {
-  "name": "detect-import-require",
-  "version": "1.1.0",
+  "name": "import-require-detective",
+  "version": "2.0.0",
   "description": "list require and import paths from a JavaScript source",
-  "main": "index.js",
   "license": "MIT",
-  "author": {
-    "name": "Matt DesLauriers",
-    "email": "dave.des@gmail.com",
-    "url": "https://github.com/mattdesl"
-  },
-  "standard": {
-    "ignore": [
-      "test/fixtures/**/*.js"
-    ]
-  },
+  "author": "andrea@parro.it",
   "dependencies": {
-    "acorn": "^2.6.4",
-    "defined": "^1.0.0",
-    "escodegen": "^1.7.0"
+    "babel-traverse": "^6.7.6",
+    "babylon": "^6.7.0"
   },
   "devDependencies": {
-    "faucet": "0.0.1",
-    "standard": "^5.4.1",
-    "tape": "^4.2.2"
+    "ava": "^0.14.0",
+    "babel-plugin-syntax-async-functions": "^6.5.0",
+    "xo": "^0.14.0"
   },
   "scripts": {
-    "test": "standard && node test/index.js | faucet"
+    "test": "ava && xo"
   },
   "keywords": [
     "import",
@@ -44,12 +33,6 @@
     "module",
     "modules"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/Jam3/detect-import-require.git"
-  },
-  "homepage": "https://github.com/Jam3/detect-import-require",
-  "bugs": {
-    "url": "https://github.com/Jam3/detect-import-require/issues"
-  }
+  "repository": "parro-it/import-require-detective",
+  "files": ["index.js"]
 }

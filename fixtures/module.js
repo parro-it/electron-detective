@@ -12,6 +12,6 @@ import 'side-effects'
 require(__dirname + '/file.js')
 require(path.join(__dirname, '/file.js'))
 
-export default function () {
+export default async function () {
   var b = require('b')
 }
